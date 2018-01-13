@@ -1,0 +1,153 @@
+void inputTime(int mode, char setStr[])             // Interface for inputting time
+{                                                    // Mode: 0: set time, 1: al1, 2:al-2, 3:al-3
+     Lcd_Cmd(_LCD_CLEAR);
+     Lcd_out(1,1,setStr);
+     Lcd_out(1,6, time);
+     Lcd_out(2,1," [Save] [Cancel]");
+     
+     if(mode == 0) //Setting time
+     {second2 = second; minute2 = minute; hour2 = hour; hr2 = hr; ap2 = ap;}
+     else // Setting alarm
+     {
+      second2 = second; minute2 = alarmMinute[mode-1]; hour2 = alarmhour[mode-1];
+      hr2 = hour2 & 0b00011111;
+      ap2 = hour2 & 0b00100000;
+     }
+
+     loopcount = 0;
+
+     while(1)
+       {
+         set = 0;
+         if(PORTA.F0 == 0)              //Mode Pressed
+         {
+             Delay_ms(100);
+             if(PORTA.F0 == 0)
+             {
+                 set_count++;
+                 if(set_count > 5)
+                 {
+                    set_count = 1;
+                 }
+             }
+         }
+
+         if(set_count)
+         {
+            if(PORTA.F1 == 0)
+            {
+              Delay_ms(100);
+              if(PORTA.F1 == 0)
+                  set = 1;
+            }
+
+            if(PORTA.F2 == 0)
+            {
+              Delay_ms(100);
+              if(PORTA.F2 == 0)
+                  set = -1;
+            }
+            if(set_count && set)
+            {
+
+            
+              switch(set_count)
+              {
+                case 1:
+                        hour2 = BCD2Binary(hour2);
+                        hour2 = hour2 + set;
+                        hour2 = Binary2BCD(hour2);
+                        if((hour2 & 0x1F) >= 0x13)
+                        {
+                          hour2 = hour2 & 0b11100001;
+                          hour2 = hour2 ^ 0x20;
+                        }
+                        else if((hour2 & 0x1F) <= 0x00)
+                        {
+                          hour2 = hour2 | 0b00010010;
+                          hour2 = hour2 ^ 0x20;
+                        }
+
+                        hr2 = hour2 & 0b00011111;
+                        ap2 = hour2 & 0b00100000;
+
+                        break;
+                case 2:
+                         minute2 = BCD2Binary(minute2);
+                         minute2 = minute2 + set;
+                         if(minute2 >= 60)
+                            minute2 = 0;
+                         if(minute2 < 0)
+                            minute2 = 59;
+                         minute2 = Binary2BCD(minute2);
+
+                         break;
+                case 3:
+                        if(!mode)
+                        {
+                        if(abs(set))
+                        {
+                          write_ds1307(0,0x00); //Reset second to 0 sec. and start Oscillator
+                          second2 = 0x00;
+                          Lcd_out(1,12, "00");
+                          }
+                        }
+                        break;
+                }
+
+            }
+            }
+         time2Str(1);
+
+         // ------------Blink Code
+         loopcount ++;
+         if(loopcount > 10) loopcount = 0; // For blinking
+         if(loopcount < 5)                 //Full display for 0.5s
+         {
+            Lcd_out(1,6, time);
+            Lcd_out(2,3, "Save");
+            Lcd_out(2,10, "Cancel");
+         }
+         else                              //Stop display for 0.5s
+         {
+            if (set_count  ==1) Lcd_out(1,6, "__");
+            else if (set_count  ==2) Lcd_out(1,9, "__");
+            else if (set_count  ==3) Lcd_out(1,12, "__");
+            else if (set_count == 4) Lcd_out(2,3, "____");
+            else if (set_count  ==5) Lcd_out(2,10, "______");
+         }
+         //---------------
+
+         Delay_ms(100);
+
+         if(PORTA.F3 == 0)                        // Break the while loop when menu pressed
+           {
+               Delay_ms(100);
+               if(PORTA.F3 == 0)
+               {
+                   if(set_count == 4)              //if Save is pressed
+                   {
+                      if(!mode)                    //Write to RTC
+                      {
+                        write_ds1307(2, hour2);
+                        write_ds1307(1, minute2);
+                        break;
+                      }
+                      else
+                      {
+                        alarmHour[mode-1] = hour;
+                        alarmMinute[mode-1] = minute;
+                      }
+                   }
+
+                   if(set_count == 5) break;
+               }
+           }
+
+       }
+     
+     Lcd_Cmd(_LCD_CLEAR);
+     set = 0;
+     set_count = 0;
+     
+}

@@ -1,0 +1,41 @@
+void populateAlarm(int alarmNo)
+{
+   switch(alarmNo)  //Add the alarm's number in LCD
+   {
+     case 1:
+         menuAlarmText[0][6] = '1';
+         break;
+     case 2:
+         menuAlarmText[0][6] = '2';
+         break;
+     case 3:
+         menuAlarmText[0][6] = '3';
+         break;
+   }
+
+   if(alarmStatus[alarmNo-1]) //ON
+   {
+     menuAlarmText[0][9] = 'N';
+     menuAlarmText[0][10] = ' ';
+   }
+   else                       //OFF
+   {
+     menuAlarmText[0][9] = 'F';
+     menuAlarmText[0][10] = 'F';
+   }
+
+                //Tunes
+   
+   menuAlarmText[1][15] = BCD2LowerCh(Binary2BCD(alarmTunes[alarmNo-1]));
+
+                //Snooze Time
+
+   menuAlarmText[1][7] = BCD2UpperCh(Binary2BCD(snoozeTimes[alarmNo-1]));
+   menuAlarmText[1][8] = BCD2LowerCh(Binary2BCD(snoozeTimes[alarmNo-1]));
+
+
+   
+   //Show in LCD
+   Lcd_out(1,1, menuAlarmText[0]);
+   Lcd_out(2,1, menuAlarmText[1]);
+}

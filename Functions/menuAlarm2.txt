@@ -1,0 +1,98 @@
+void menuAlarm2(int alarmNo)
+{
+   Lcd_Cmd(_LCD_CLEAR);
+   populateAlarm(alarmNo);
+   
+   loopcount = 0;
+   while(1)
+   {
+       set = 0;
+       if(PORTA.F0 == 0)              //Mode Pressed
+       {
+           Delay_ms(100);
+           if(PORTA.F0 == 0)
+           {
+               set_count++;
+               if(set_count > 4)
+               {
+                  set_count = 1;
+               }
+           }
+       }
+
+       if(set_count)
+       {
+          if(PORTA.F1 == 0)
+          {
+            Delay_ms(100);
+            if(PORTA.F1 == 0)
+                set = 1;
+          }
+
+          if(PORTA.F2 == 0)
+          {
+            Delay_ms(100);
+            if(PORTA.F2 == 0)
+                set = -1;
+          }
+          if(set_count && set)
+          {
+            switch(set_count)
+            {
+              case 1: //On Off
+                   alarmStatus[alarmNo-1] = ~alarmStatus[alarmNo-1];
+                   populateAlarm(alarmNo);
+                   break;
+              case 3: //Snooze
+                   snoozeTimes[alarmNo-1] += set;
+                   if(snoozeTimes[alarmNo-1] >19) snoozeTimes[alarmNo-1] = 0;
+                   if(snoozeTimes[alarmNo-1] <0) snoozeTimes[alarmNo-1] = 19;
+                   populateAlarm(alarmNo);
+                   break;
+              case 2: //Time
+                   inputTime(2);    //
+                   populateAlarm(alarmNo);
+                   break;
+              case 4: //Tune
+                   alarmTunes[alarmNo-1] += set;
+                   if(alarmTunes[alarmNo-1] >3) alarmTunes[alarmNo-1] = 1;
+                   populateAlarm(alarmNo);
+                   break;
+
+            }
+
+          }
+          // ------------Blink Code
+         loopcount ++;
+         if(loopcount > 10) loopcount = 0; // For blinking
+         if(loopcount < 5)
+         {
+            Lcd_out(1,1, menuAlarmText[0]);
+            Lcd_out(2,1, menuAlarmText[1]);     //Show full menu for 0.5s
+         }
+         else
+         {
+            if      (set_count  ==1) Lcd_out(1,9, "___");
+            else if (set_count  ==2) Lcd_out(1,13, "____");
+            else if (set_count  ==3) Lcd_out(2,8, "__");
+            else if (set_count  ==4) Lcd_out(2,16, "_");
+         }
+         //---------------
+        }
+
+        if(PORTA.F3 == 0)                        // Break the while loop when menu pressed
+         {
+             Delay_ms(100);
+             if(PORTA.F3 == 0) break;
+         }
+
+
+        Delay_ms(100);
+   }
+
+   Lcd_Cmd(_LCD_CLEAR);
+   set = 0;
+   set_count = 0;
+   loopcount = 0;
+   menuAlarmText[0][6] = "_";
+}

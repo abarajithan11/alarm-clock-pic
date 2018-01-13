@@ -1,0 +1,225 @@
+void alarmMenu(int alarmNo)      //Modified code from setTime()
+{
+
+    Lcd_out(2,1,"Set Alarm");
+
+    while(1)
+    {
+
+    if (PORTA.F3 == 0) // If menu pressed
+    {
+         Delay_ms(100);
+         if(PORTA.F3 == 0)     //Save the alarm and go back
+         {
+
+             //Code to go back
+         }
+
+    }
+
+
+    if(PORTA.F0 == 0)  //If mode pressed
+     {
+         Delay_ms(100);
+         if(PORTA.F0 == 0)
+         {
+             set_count++;
+             if(set_count >= 4)
+             {
+                set_count = 0;
+             }
+         }
+     }
+     if(set_count)
+     {
+        if(PORTA.F1 == 0)         // Increment
+        {
+          Delay_ms(100);
+          if(PORTA.F1 == 0)       // Decrement
+              set = 1;
+        }
+
+        if(PORTA.F2 == 0)
+        {
+          Delay_ms(100);
+          if(PORTA.F2 == 0)
+              set = -1;
+        }
+        if(set_count && set)      // If both changed
+        {
+          switch(set_count)       // 3 cases
+          {
+            case 1:
+                    hour = BCD2Binary(hour);
+                    hour = hour + set;
+                    hour = Binary2BCD(hour);
+                    if((hour & 0x1F) >= 0x13)
+                    {
+                      hour = hour & 0b11100001;
+                      hour = hour ^ 0x20;
+                    }
+                    else if((hour & 0x1F) <= 0x00)
+                    {
+                      hour = hour | 0b00010010;
+                      hour = hour ^ 0x20;
+                    }
+                    write_ds1307(2, hour); //write hour
+                    break;
+            case 2:
+                     minute = BCD2Binary(minute);
+                     minute = minute + set;
+                     if(minute >= 60)
+                        minute = 0;
+                     if(minute < 0)
+                        minute = 59;
+                     Binary2BCD(minute);
+
+                     write_ds1307(1, minute); //write min
+                     break;
+            case 3:
+                    if(abs(set))
+                      write_ds1307(0,0x00); //Reset second to 0 sec. and start Oscillator
+                    break;
+
+          }
+        }
+     }
+
+     } // Loop Ends
+
+}
+
+void menuMain()
+{
+   Lcd_Cmd(_LCD_CLEAR);
+   while(1)
+   {
+        Lcd_out(1, 1, "  Edit Alarm");
+        Lcd_out(2, 1, "  Set Date/Time");
+   
+        if (PORTA.F2 == 0 || PORTA.F1 == 0)       //If  V or ^ pressed
+        {
+           Delay_ms(100);
+           if (PORTA. F2 == 0|| PORTA.F1 == 0)
+           {
+              setMenuCounter = ~setMenuCounter;
+           }
+        }
+
+        if (setMenuCounter) 
+           { Lcd_out(2, 1, ">"); Lcd_out(1, 1, " "); }
+        else  
+           { Lcd_out(2, 1, " "); Lcd_out(1, 1, ">"); }
+
+        //*************Menu Selection****************
+
+        if(PORTA.F0 == 0)             // If mode (Select) is pressed
+        {
+           Delay_ms(100);
+           if(PORTA.F0 == 0)
+             {
+                 Lcd_Cmd(_LCD_CLEAR);
+                 if (!setMenuCounter) menuAlarmList();  //Edit Alarm Menu
+                 
+                 else                 // If Set Date
+                 {
+
+                 }
+             }
+             
+         }
+         
+         if(PORTA.F3 == 0)            // If menu pressed, return
+           {
+               Delay_ms(100);
+               if(PORTA.F3 == 0)
+               {
+                 Lcd_Cmd(_LCD_CLEAR);
+                 break;
+               }
+           }
+
+
+        Delay_ms(100);
+
+   }
+
+
+}
+
+void menuAlarmList()
+{
+    Lcd_Cmd(_LCD_CLEAR);
+    while(1)
+    {
+           Lcd_out(1, 1, "> Alarm ");
+           Lcd_out(2, 1, "  Alarm ");
+
+           if (PORTA.F2 == 0)       //If  V  Pressed
+           {
+                Delay_ms(100);
+                if (PORTA. F2 == 0)
+                 {
+                     setMenuAlarm ++;
+
+                    if (setMenuAlarm > 3) setMenuAlarm =1;
+                    //PORTC.F0 = ~PORTC.F0;
+                 }
+           }
+           if (PORTA.F1 == 0)       //If  ^   Pressed
+           {
+                Delay_ms(100);
+                if (PORTA. F1 == 0)
+                 {
+                     setMenuAlarm --;
+                   if (setMenuAlarm < 1) setMenuAlarm =3;
+                   //PORTC.F1 = ~PORTC.F1;
+                 }
+           }
+
+           switch (setMenuAlarm)             // Change the Menus from data
+           {
+                case 1:
+                      if(alarmTunes[0]) Lcd_out(1, 9, "1 : ON  ");   // If Alarm 1 is On
+                      else Lcd_out(1, 9, "1 : OFF ");
+
+                      if(alarmTunes[1]) Lcd_out(2, 9, "2 : ON  ");   // If Alarm 2 is On
+                      else Lcd_out(2, 9, "2 : OFF ");
+
+                      break;
+                case 2:
+                      if(alarmTunes[1]) Lcd_out(1, 9, "2 : ON  ");   // If Alarm 2 is On
+                      else Lcd_out(1, 9, "2 : OFF ");
+
+                      if(alarmTunes[2]) Lcd_out(2, 9, "3 : ON  ");   // If Alarm 3 is On
+                      else Lcd_out(2, 9, "3 : OFF ");
+                      break;
+                case 3:
+                      if(alarmTunes[2]) Lcd_out(1, 9, "3 : ON  ");   // If Alarm 3 is On
+                      else Lcd_out(1, 9, "3 : OFF ");
+
+                      if(alarmTunes[0]) Lcd_out(2, 9, "1 : ON  ");   // If Alarm 1 is On
+                      else Lcd_out(2, 9, "1 : OFF ");
+                      break;
+           }
+           
+           if(PORTA.F3 == 0)            // If menu pressed, return
+           {
+               Delay_ms(100);
+               if(PORTA.F3 == 0)
+               {
+                 Lcd_Cmd(_LCD_CLEAR);
+                 break;
+               }
+           }
+
+
+
+           Delay_ms(100);
+    }
+}
+
+void menuEditAlarm(int alarmNo)
+{
+
+}

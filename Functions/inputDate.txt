@@ -1,0 +1,168 @@
+
+void inputDate()                      // Interface for input & write Date
+{
+     Lcd_Cmd(_LCD_CLEAR);
+     Lcd_out(1,1,"Date:");
+     Lcd_out(1,6, date);
+     Lcd_out(2,1," [Save] [Cancel]");
+
+     loopcount = 0;
+
+     while(1)
+     {
+       set = 0;
+       if(PORTA.F0 == 0)              //Mode Pressed
+       {
+           Delay_ms(100);
+           if(PORTA.F0 == 0)
+           {
+               set_count++;
+               if(set_count > 5)
+               {
+                  set_count = 1;
+               }
+           }
+       }
+
+       if(set_count)
+       {
+          if(PORTA.F1 == 0)
+          {
+            Delay_ms(100);
+            if(PORTA.F1 == 0)
+                set = 1;
+          }
+
+          if(PORTA.F2 == 0)
+          {
+            Delay_ms(100);
+            if(PORTA.F2 == 0)
+                set = -1;
+          }
+          if(set_count && set)
+          {
+            switch(set_count)
+            {
+              case 3:
+                     day = BCD2Binary(day);
+                     day = day + set;
+                     day = Binary2BCD(day);
+                     /*if(day >= 0x32)
+                        day = 1;
+                     if(day <= 0)
+                        day = 0x31;*/
+                        
+                     if(month == 0x1 || month == 0x3 || month == 0x5 || month == 0x7 || month == 0x8 || month == 0x10 || month == 0x12) // 31 Days
+                        {
+                           if (day > 0x31) day =1;
+                           if (day < 1) day = 0x31;
+                        }
+                     if(month == 0x4 || month == 0x6 || month == 0x9 || month == 0x11) // 30 Days
+                         {
+                           if (day > 0x30) day =1;
+                           if (day < 1) day = 0x30;
+                        }
+                     if(month == 0x2) // February
+                       {
+                           if(BCD2Binary(year) % 100 == 0)                                          // If Divisible by 100
+                           {
+                                 if(BCD2Binary(year) % 400 == 0) //Leap Year
+                                 {
+                                    if (day > 0x29) day =1;
+                                    if (day < 1) day = 0x29;
+                                 }
+                                 else                          //Not a leap year
+                                 {
+                                    if (day > 0x28) day =1;
+                                    if (day < 1) day = 0x28;
+                                 }
+                           }
+                           else
+                           {
+                                 if(BCD2Binary(year) % 4 == 0) //Leap Year
+                                 {
+                                    if (day > 0x29) day =1;
+                                    if (day < 1) day = 0x29;
+                                 }
+                                 else                          //Not a leap year
+                                 {
+                                    if (day > 0x28) day =1;
+                                    if (day < 1) day = 0x28;
+                                 }
+                           }
+                       }
+                        
+                     break;
+
+                      break;
+              case 2:
+                       month = BCD2Binary(month);
+                       month = month + set;
+                       month = Binary2BCD(month);
+                       if(month > 0x12)
+                                month = 1;
+                       if(month <= 0)
+                                month = 0x12;
+                       minute = Binary2BCD(minute);
+
+                       break;
+              case 1:
+                      year = BCD2Binary(year);
+                      year = year + set;
+                      year = Binary2BCD(year);
+                    if(year <= -1)
+                       year = 0x99;
+                    if(year >= 0x50)
+                       year = 0;
+                      break;
+              }
+
+          }
+          }
+       date2Str();
+
+       // ------------Blink Code
+       loopcount ++;
+       if(loopcount > 10) loopcount = 0; // For blinking
+       if(loopcount < 5)
+       {
+          Lcd_out(1,6, date);     //Show full date for 1s
+          Lcd_out(2,3, "Save");
+          Lcd_out(2,10, "Cancel");
+       }
+       else
+       {
+          if (set_count  ==1) Lcd_out(1,12, "__");
+          else if (set_count  ==2) Lcd_out(1,9, "__");
+          else if (set_count  ==3) Lcd_out(1,6, "__");
+          else if (set_count == 4) Lcd_out(2,3, "____");
+          else if (set_count  ==5) Lcd_out(2,10, "______");
+       }
+       //---------------
+
+       Delay_ms(100);
+
+       if(PORTA.F3 == 0)                        // Break the while loop when menu pressed
+         {
+             Delay_ms(100);
+             if(PORTA.F3 == 0)
+             {
+                 if(set_count == 4 )             //Write to RTC, if Save is pressed
+                 {
+                      write_ds1307(4, day);
+                      write_ds1307(5,month);
+                      write_ds1307(6, year);
+                 }
+                 break;
+                 
+                 if(set_count == 5) break;
+             }
+         }
+
+     }
+
+     Lcd_Cmd(_LCD_CLEAR);
+     set = 0;
+     set_count = 0;
+
+}
